@@ -9,7 +9,9 @@ import (
 )
 
 func ExibeTodosAlunos(c *gin.Context) {
-	c.JSON(200, models.Alunos)
+	var alunos []models.Aluno
+	database.DB.Find(&alunos)
+	c.JSON(200, alunos)
 }
 
 func Saudacao(c *gin.Context) {
@@ -27,5 +29,12 @@ func CriarNovoAluno(c *gin.Context) {
 		return
 	}
 	database.DB.Create(&aluno)
+	c.JSON(http.StatusOK, aluno)
+}
+
+func BuscaAlunoPorID(c *gin.Context) {
+	var aluno models.Aluno
+	id := c.Params.ByName("id")
+	database.DB.First(&aluno, id)
 	c.JSON(http.StatusOK, aluno)
 }
