@@ -9,13 +9,28 @@ import (
 
 	"github.com/eltonsantos/gin-rest-api/controllers"
 	"github.com/eltonsantos/gin-rest-api/database"
+	"github.com/eltonsantos/gin-rest-api/models"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
+var ID int
+
 func SetupDasRotasDeTeste() *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
 	rotas := gin.Default()
 	return rotas
+}
+
+func CriarAlunoMock() {
+	aluno := models.Aluno{Nome: "Nome do Aluno Teste", CPF: "12345678901", RG: "123456789"}
+	database.DB.Create(&aluno)
+	ID = int(aluno.ID)
+}
+
+func DeletaAlunoMock() {
+	var aluno models.Aluno
+	database.DB.Delete(&aluno, ID)
 }
 
 func TestVerificaStatusCodeDaSaudacaoComParametro(t *testing.T) {
@@ -34,6 +49,8 @@ func TestVerificaStatusCodeDaSaudacaoComParametro(t *testing.T) {
 
 func TestListandoTodosOsAlunosHandler(t *testing.T) {
 	database.ConectaComBancoDeDados()
+	CriarAlunoMock()
+	defer DeletaAlunoMock()
 	r := SetupDasRotasDeTeste()
 	r.GET("/alunos", controllers.ExibeTodosAlunos)
 	req, _ := http.NewRequest("GET", "/alunos", nil)
@@ -41,4 +58,16 @@ func TestListandoTodosOsAlunosHandler(t *testing.T) {
 	r.ServeHTTP(resposta, req)
 	assert.Equal(t, http.StatusOK, resposta.Code)
 	fmt.Println(resposta.Body)
+}
+
+func TestBuscaAlunoPorCPFHandler(t *testing.T) {
+	database.ConectaComBancoDeDados()
+	CriarAlunoMock()
+	defer DeletaAlunoMock()
+	r := SetupDasRotasDeTeste()
+	r.GET("/alunos/cpf/:cpf", controllers.BuscaAlunoPorCPF)
+	req, _ := http.NewRequest("GET", "/alunos/cpf/12345678901", nil)
+	resposta := httptest.NewRecorder()
+	r.ServeHTTP(resposta, req)
+	assert.Equal(t, http.StatusOK, resposta.Code)
 }
